@@ -1,5 +1,5 @@
 {
-  "name": "@mailflow/shared-types",
+  "name": "@mailflow/routing-engine",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -14,10 +14,14 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "tsc --noEmit",
-    "dev": "tsc --watch"
+    "test": "tsx --test tests/**/*.test.ts"
+  },
+  "dependencies": {
+    "@mailflow/shared-types": "*"
   },
   "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3"
   }
 }

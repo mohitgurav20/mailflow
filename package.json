@@ -1,12 +1,30 @@
 {
-  "name": "mailflow",
+  "name": "mailflow-monorepo",
+  "version": "1.0.0",
   "private": true,
+  "description": "MailFlow - Dynamic Multimodal Mail Transmission Solution for India Post (SIH260461)",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
     "dev": "npm --prefix apps/web run dev",
-    "build": "npm --prefix apps/web run build"
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:api": "npm --prefix apps/api run dev",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "test:engine": "npm --workspace=packages/routing-engine run test",
+    "test:api": "tsx scripts/test-api.ts",
+    "start:api": "npm --workspace=apps/api run start",
+    "seed": "tsx scripts/seed.ts",
+    "sim": "tsx scripts/sim-clock.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
