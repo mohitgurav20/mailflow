@@ -1,0 +1,11 @@
+originHubId,destHubId,weightKg,mailClass,priority,senderName,senderCity,senderPin,recipientName,recipientCity,recipientPin,contentsDescription
+hub-del,hub-bom,2.5,SPEED_POST,EXPRESS,Ministry of External Affairs,New Delhi,110001,Consulate General,Mumbai,400001,Diplomatic Dispatch
+hub-del,hub-blr,1.2,SPEED_POST,EXPRESS,ISRO Headquarters Liaison,New Delhi,110003,UR Rao Satellite Centre,Bengaluru,560017,Telemetry Sensor Modules
+hub-ccu,hub-gau,3.8,SPEED_POST,STANDARD,Assam Emporium Dist,Kolkata,700001,Guwahati Central Store,Guwahati,781001,Handloom Textiles
+hub-bom,hub-pnq,5.0,SPEED_POST,STANDARD,Tata Motors Logistics,Mumbai,400018,Tata AutoComp Systems,Pune,411014,Precision Engine Gaskets
+hub-del,hub-sxr,1.0,SPEED_POST,EXPRESS,UIDAI Regional Centre,New Delhi,110001,Postmaster General Srinagar,Srinagar,190001,Official Identity Documents
+hub-maa,hub-ixz,4.2,SPEED_POST,EXPRESS,Tamil Nadu Medical Services,Chennai,600002,GB Pant Hospital,Port Blair,744101,Critical Medical Vaccines
+hub-del,hub-ccu,45.0,BULK_PARCEL,ECONOMY,National Book Trust,New Delhi,110016,Kolkata University Library,Kolkata,700073,Academic Reference Volumes
+hub-bom,hub-del,60.0,BULK_PARCEL,ECONOMY,Godrej Agrovet Ltd,Mumbai,400079,IARI Pusa Campus,New Delhi,110012,Agricultural Seed Samples
+hub-hyd,hub-vga,8.5,SPEED_POST,STANDARD,Andhra Bank Records,Hyderabad,500001,Zonal Office Vijayawada,Vijayawada,520002,Audit Documentation
+hub-blr,hub-cok,2.0,SPEED_POST,EXPRESS,Biocon Biologicals,Bengaluru,560100,Amrita Institute of Medical Sciences,Kochi,682041,Biochemical Reagents
