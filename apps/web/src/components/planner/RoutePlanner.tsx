@@ -1,23 +1,49 @@
 import React, { useState } from 'react';
 import { useMockStore } from '../../mock/mockStore';
 import { MailClass, RouteOption } from '@mailflow/shared-types';
-import { Zap, ShieldCheck, DollarSign, Clock, ArrowRight, CheckCircle2, Info, Building } from 'lucide-react';
+import { 
+  Zap, ShieldCheck, DollarSign, Clock, ArrowRight, CheckCircle2, Info, Building,
+  MapPin, Compass, Navigation, Truck, Plane, Train, Sparkles
+} from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png'
+});
 
 export const RoutePlanner: React.FC = () => {
   const { hubs, computeRouteOptions, inductConsignment, setActiveView } = useMockStore();
 
-  const [originHubId, setOriginHubId] = useState<string>('hub-delhi');
-  const [destHubId, setDestHubId] = useState<string>('hub-mumbai');
+  const [originHubId, setOriginHubId] = useState<string>('hub-del');
+  const [destHubId, setDestHubId] = useState<string>('hub-bom');
   const [weightKg, setWeightKg] = useState<number>(3.5);
   const [mailClass, setMailClass] = useState<MailClass>('SPEED_POST');
 
-  const [senderName, setSenderName] = useState<string>('Ministry of Science & Tech');
+  // Granular Location State
+  const [senderState, setSenderState] = useState<string>('Delhi');
+  const [senderDistrict, setSenderDistrict] = useState<string>('New Delhi');
+  const [senderVillage, setSenderVillage] = useState<string>('Connaught Place Sub-Post Office (110001)');
+
+  const [receiverState, setReceiverState] = useState<string>('Maharashtra');
+  const [receiverDistrict, setReceiverDistrict] = useState<string>('Mumbai South');
+  const [receiverVillage, setReceiverVillage] = useState<string>('Colaba Delivery PO (400005)');
+
+  const [senderName, setSenderName] = useState<string>('Department of Commerce, Govt of India');
   const [receiverName, setReceiverName] = useState<string>('Director, TIFR Mumbai');
 
   const [computedOptions, setComputedOptions] = useState<RouteOption[] | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<string>('opt-1');
   const [isInducted, setIsInducted] = useState<boolean>(false);
   const [inductedTrackingNum, setInductedTrackingNum] = useState<string>('');
+
+  const originHub = hubs.find((h) => h.id === originHubId) || hubs[0];
+  const destHub = hubs.find((h) => h.id === destHubId) || hubs[1];
 
   const handleComputeRoutes = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,15 +57,12 @@ export const RoutePlanner: React.FC = () => {
     if (!computedOptions) return;
     const chosenRoute = computedOptions.find((o) => o.id === selectedRouteId) || computedOptions[0];
 
-    const originHub = hubs.find((h) => h.id === originHubId);
-    const destHub = hubs.find((h) => h.id === destHubId);
-
     const newConsignment = inductConsignment(
       {
         senderName,
-        senderCity: originHub?.circle || 'Origin',
+        senderCity: `${senderVillage}, ${senderDistrict}, ${senderState}`,
         receiverName,
-        receiverCity: destHub?.circle || 'Destination',
+        receiverCity: `${receiverVillage}, ${receiverDistrict}, ${receiverState}`,
         originHubId,
         destHubId,
         weightKg,
@@ -57,56 +80,112 @@ export const RoutePlanner: React.FC = () => {
     setInductedTrackingNum(newConsignment.trackingNumber);
   };
 
+  const selectedRoute = computedOptions?.find((r) => r.id === selectedRouteId) || computedOptions?.[0];
+
+  // Route map coordinates
+  const mapPositions: [number, number][] = [
+    [originHub.lat, originHub.lng],
+    [destHub.lat, destHub.lng]
+  ];
+  const midLat = (originHub.lat + destHub.lat) / 2;
+  const midLng = (originHub.lng + destHub.lng) / 2;
+
   return (
-    <div className="page-view">
+    <div className="page-view" style={{ background: '#F8FAFC', padding: '24px', borderRadius: '12px' }}>
       <div style={styles.topHeader}>
         <div>
-          <h2 style={styles.title}>Dynamic Multimodal Route Planner & Optimizer</h2>
-          <p style={styles.subtitle}>
-            Time-expanded shortest path algorithm respecting live capacity constraints and EWMA reliability scores.
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ background: '#1E40AF', padding: '8px', borderRadius: '8px', color: '#FFF' }}>
+              <Navigation size={20} />
+            </div>
+            <div>
+              <h2 style={styles.title}>Multimodal Route Planner & GPS Network Engine</h2>
+              <p style={styles.subtitle}>
+                State ➔ District ➔ Village/Town ➔ Postal Hub Granular Routing Chain with Dijkstra Optimization.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid-3">
-        {/* Induction Input Form */}
-        <div className="glass-card" style={{ padding: '24px' }}>
-          <h3 style={styles.formTitle}>Parcel Induction & Policy Inputs</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '24px' }}>
+        {/* Left Panel: Granular Address & Policy Inputs */}
+        <div style={styles.card}>
+          <h3 style={styles.cardTitle}>📍 Granular Location & Parcel Inputs</h3>
 
           <form onSubmit={handleComputeRoutes} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label style={styles.label}>Origin National Sorting Hub</label>
-              <select
-                value={originHubId}
-                onChange={(e) => setOriginHubId(e.target.value)}
-                style={styles.input}
-              >
-                {hubs.map((hub) => (
-                  <option key={hub.id} value={hub.id}>
-                    {hub.name} ({hub.circle})
-                  </option>
-                ))}
-              </select>
+            {/* Sender Address */}
+            <div style={styles.addressBlock}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#E65100', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Sender Origin Location (State ➔ City ➔ Village)
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                <div>
+                  <label style={styles.label}>State</label>
+                  <input type="text" value={senderState} onChange={(e) => setSenderState(e.target.value)} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>District / City</label>
+                  <input type="text" value={senderDistrict} onChange={(e) => setSenderDistrict(e.target.value)} style={styles.input} />
+                </div>
+              </div>
+
+              <div>
+                <label style={styles.label}>Town / Village / Sub-Post Office & Pincode</label>
+                <input type="text" value={senderVillage} onChange={(e) => setSenderVillage(e.target.value)} style={styles.input} />
+              </div>
+
+              <div style={{ marginTop: '8px' }}>
+                <label style={styles.label}>Nearest National / Intra-Circle Sorting Hub</label>
+                <select value={originHubId} onChange={(e) => setOriginHubId(e.target.value)} style={styles.select}>
+                  {hubs.map((hub) => (
+                    <option key={hub.id} value={hub.id}>
+                      {hub.name} ({hub.circle})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label style={styles.label}>Destination Sorting Hub</label>
-              <select
-                value={destHubId}
-                onChange={(e) => setDestHubId(e.target.value)}
-                style={styles.input}
-              >
-                {hubs.map((hub) => (
-                  <option key={hub.id} value={hub.id}>
-                    {hub.name} ({hub.circle})
-                  </option>
-                ))}
-              </select>
+            {/* Receiver Address */}
+            <div style={styles.addressBlockGreen}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#16A34A', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Addressee Destination Location (State ➔ City ➔ Village)
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                <div>
+                  <label style={styles.label}>State</label>
+                  <input type="text" value={receiverState} onChange={(e) => setReceiverState(e.target.value)} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>District / City</label>
+                  <input type="text" value={receiverDistrict} onChange={(e) => setReceiverDistrict(e.target.value)} style={styles.input} />
+                </div>
+              </div>
+
+              <div>
+                <label style={styles.label}>Town / Village / Delivery PO & Pincode</label>
+                <input type="text" value={receiverVillage} onChange={(e) => setReceiverVillage(e.target.value)} style={styles.input} />
+              </div>
+
+              <div style={{ marginTop: '8px' }}>
+                <label style={styles.label}>Destination Sorting Hub</label>
+                <select value={destHubId} onChange={(e) => setDestHubId(e.target.value)} style={styles.select}>
+                  {hubs.map((hub) => (
+                    <option key={hub.id} value={hub.id}>
+                      {hub.name} ({hub.circle})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
+            {/* Policy & Weight */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={styles.label}>Parcel Weight (kg)</label>
+                <label style={styles.label}>Weight (kg)</label>
                 <input
                   type="number"
                   step="0.1"
@@ -119,12 +198,8 @@ export const RoutePlanner: React.FC = () => {
               </div>
 
               <div>
-                <label style={styles.label}>Mail Class Policy</label>
-                <select
-                  value={mailClass}
-                  onChange={(e) => setMailClass(e.target.value as any)}
-                  style={styles.input}
-                >
+                <label style={styles.label}>Mail Policy</label>
+                <select value={mailClass} onChange={(e) => setMailClass(e.target.value as any)} style={styles.select}>
                   <option value="SPEED_POST">Speed Post (24h Priority)</option>
                   <option value="REGISTERED_PARCEL">Registered Parcel</option>
                   <option value="BUSINESS_PARCEL">Business Bulk Parcel</option>
@@ -132,128 +207,121 @@ export const RoutePlanner: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label style={styles.label}>Sender Info</label>
-              <input
-                type="text"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                style={styles.input}
-              />
-            </div>
-
-            <div>
-              <label style={styles.label}>Addressee Info</label>
-              <input
-                type="text"
-                value={receiverName}
-                onChange={(e) => setReceiverName(e.target.value)}
-                style={styles.input}
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }}>
-              <Zap size={15} />
+            <button type="submit" style={styles.btnCompute}>
+              <Zap size={16} />
               <span>Compute Optimal Multimodal Routes</span>
             </button>
           </form>
         </div>
 
-        {/* Ranked Route Options Display */}
-        <div className="glass-card" style={{ padding: '24px', gridColumn: 'span 2' }}>
-          <h3 style={styles.formTitle}>3 Ranked Multimodal Options (Explainable Dijkstra)</h3>
-
-          {!computedOptions ? (
-            <div style={styles.emptyState}>
-              <Info size={32} color="#D4AF37" />
-              <p>Fill in the induction form and click <strong>Compute Optimal Multimodal Routes</strong> to evaluate options.</p>
+        {/* Right Panel: Computed Multimodal Route Options & GPS Map */}
+        <div>
+          {/* Granular Postal Chain Flow */}
+          <div style={styles.chainCard}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A', textTransform: 'uppercase', marginBottom: '8px' }}>
+              6-Leg Granular Postal Transmission Chain
             </div>
-          ) : (
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+              <div style={styles.chainNode}>📍 {senderVillage}</div>
+              <ArrowRight size={14} color="#64748B" />
+              <div style={styles.chainNode}>🏢 {senderDistrict} Sub-PO</div>
+              <ArrowRight size={14} color="#64748B" />
+              <div style={styles.chainNodeActive}>🏛️ {originHub.name}</div>
+              <ArrowRight size={14} color="#E65100" />
+              <div style={styles.chainNodeActive}>⚡ Multimodal Transit</div>
+              <ArrowRight size={14} color="#E65100" />
+              <div style={styles.chainNodeActive}>🏛️ {destHub.name}</div>
+              <ArrowRight size={14} color="#64748B" />
+              <div style={styles.chainNode}>📬 {receiverDistrict} Delivery PO</div>
+              <ArrowRight size={14} color="#64748B" />
+              <div style={styles.chainNode}>🏠 {receiverVillage}</div>
+            </div>
+          </div>
+
+          {/* Interactive Route Map */}
+          <div style={{ height: '220px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #CBD5E1', marginBottom: '20px', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+            <MapContainer center={[midLat, midLng]} zoom={5} style={{ height: '100%', width: '100%' }}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker position={[originHub.lat, originHub.lng]}>
+                <Popup>Origin Hub: {originHub.name}</Popup>
+              </Marker>
+              <Marker position={[destHub.lat, destHub.lng]}>
+                <Popup>Destination Hub: {destHub.name}</Popup>
+              </Marker>
+              <Polyline positions={mapPositions} color="#E65100" weight={4} dashArray="6, 6" />
+            </MapContainer>
+          </div>
+
+          {/* Computed Route Cards */}
+          {computedOptions && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {computedOptions.map((opt) => {
-                const isSelected = selectedRouteId === opt.id;
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                  Dijkstra Ranked Route Recommendations ({computedOptions.length} Evaluated)
+                </h3>
+                {isInducted && (
+                  <span style={styles.badgeSuccess}>
+                    ✓ Inducted! Tracking No: {inductedTrackingNum}
+                  </span>
+                )}
+              </div>
+
+              {computedOptions.map((option, index) => {
+                const isSelected = option.id === selectedRouteId;
+
                 return (
                   <div
-                    key={opt.id}
-                    onClick={() => setSelectedRouteId(opt.id)}
+                    key={option.id}
+                    onClick={() => setSelectedRouteId(option.id)}
                     style={{
                       ...styles.routeCard,
-                      borderColor: isSelected ? '#C41E3A' : 'rgba(255, 255, 255, 0.1)',
-                      background: isSelected ? 'rgba(196, 30, 58, 0.08)' : 'rgba(30, 41, 59, 0.4)'
+                      border: isSelected ? '2px solid #1E40AF' : '1px solid #E2E8F0',
+                      boxShadow: isSelected ? '0 4px 12px rgba(30, 64, 175, 0.15)' : 'none'
                     }}
                   >
                     <div style={styles.routeHeader}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={styles.rankBadge}>Rank #{opt.rank}</span>
-                        <h4 style={styles.optTitle}>{opt.title}</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={index === 0 ? styles.badgeRank1 : index === 1 ? styles.badgeRank2 : styles.badgeRank3}>
+                          Rank #{index + 1}
+                        </span>
+                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
+                          {option.title || `Option ${index + 1}: ${option.legs.map((l) => l.mode).join(' ➔ ')}`}
+                        </h4>
                       </div>
-                      <div style={styles.metricBadges}>
-                        <span style={styles.metricChip}>
-                          <Clock size={12} /> {opt.totalDurationHours}h SLA
-                        </span>
-                        <span style={styles.metricChip}>
-                          <DollarSign size={12} /> ₹{opt.totalCost.toFixed(0)}
-                        </span>
-                        <span style={styles.metricChip}>
-                          <ShieldCheck size={12} color="#10B981" /> {(opt.compositeReliability * 100).toFixed(0)}% EWMA
-                        </span>
+
+                      <div style={{ display: 'flex', gap: '16px', fontSize: '13px', fontWeight: 700 }}>
+                        <span style={{ color: '#0284C7' }}>⏱️ {option.totalDurationHours || 12}h SLA</span>
+                        <span style={{ color: '#16A34A' }}>₹{option.totalCost}/kg</span>
+                        <span style={{ color: '#E65100' }}>🌱 1.2 kg CO₂</span>
                       </div>
                     </div>
 
-                    {/* Legs Journey Timeline */}
-                    <div style={styles.legsRow}>
-                      {opt.legs.map((leg, idx) => (
-                        <React.Fragment key={leg.id}>
-                          <div style={styles.legPill}>
-                            <span className="badge" style={{ fontSize: '9px' }}>{leg.mode.replace('_', ' ')}</span>
-                            <span style={styles.carrierName}>{leg.carrierName}</span>
-                            <span style={styles.legCap}>Cap: {leg.availableCapacityKg}kg free</span>
-                          </div>
-                          {idx < opt.legs.length - 1 && <ArrowRight size={14} color="#94A3B8" />}
-                        </React.Fragment>
+                    {/* Legs Detail */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '12px 0' }}>
+                      {option.legs.map((leg) => (
+                        <div key={leg.id || leg.mode} style={styles.legPill}>
+                          <span>{leg.mode === 'COMMERCIAL_AIR' ? '✈️ Commercial Air' : leg.mode === 'RMS_RAIL' ? '🚆 RMS Express Rail' : leg.mode === 'SURFACE_WATER' ? '🚢 Coastal Cargo' : '🚛 Departmental MMS Road'}</span>
+                          <span style={{ color: '#64748B', fontSize: '10px' }}>({leg.distanceKm || 450} km)</span>
+                        </div>
                       ))}
                     </div>
 
-                    {/* Rationale Explanation */}
+                    {/* Explainable Rationale */}
                     <div style={styles.rationaleBox}>
-                      <strong>Explainable Rationale:</strong> {opt.rationale}
+                      <Info size={14} color="#1E40AF" style={{ marginTop: '2px', flexShrink: 0 }} />
+                      <p style={{ margin: 0, fontSize: '12px', color: '#1E293B', lineHeight: 1.5 }}>
+                        <strong>Explainable Rationale:</strong> {option.rationale}
+                      </p>
                     </div>
                   </div>
                 );
               })}
 
-              {/* Handshake Booking Confirmation Bar */}
-              <div style={styles.actionRow}>
-                {isInducted ? (
-                  <div style={styles.successBox}>
-                    <CheckCircle2 size={20} color="#10B981" />
-                    <div>
-                      <p style={{ margin: 0, fontWeight: 700, color: '#10B981' }}>
-                        Handshake Confirmed! Parcel Inducted: {inductedTrackingNum}
-                      </p>
-                      <p style={{ margin: 0, fontSize: '11px', color: '#94A3B8' }}>
-                        Space reserved across chosen transport legs. Customer alert triggered.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setActiveView('consignments')}
-                      className="btn btn-secondary"
-                      style={{ marginLeft: 'auto' }}
-                    >
-                      Track Parcel →
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleConfirmReservation}
-                    className="btn btn-primary"
-                    style={{ width: '100%', padding: '12px' }}
-                  >
-                    <CheckCircle2 size={16} />
-                    <span>Confirm & Reserve Capacity Handshake for Selected Route</span>
-                  </button>
-                )}
-              </div>
+              <button onClick={handleConfirmReservation} style={styles.btnReserve}>
+                <CheckCircle2 size={18} />
+                <span>Confirm & Reserve Capacity Handshake for Selected Route</span>
+              </button>
             </div>
           )}
         </div>
@@ -268,130 +336,189 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     fontSize: '22px',
-    color: '#FFFFFF',
-    margin: '0 0 4px 0'
+    fontWeight: 800,
+    color: '#0F172A',
+    margin: 0
   },
   subtitle: {
     fontSize: '13px',
-    color: '#94A3B8',
-    margin: 0
+    color: '#64748B',
+    margin: '2px 0 0 0'
   },
-  formTitle: {
+  card: {
+    background: '#FFFFFF',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+    padding: '20px',
+    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)'
+  },
+  cardTitle: {
     fontSize: '15px',
-    color: '#FFFFFF',
+    fontWeight: 700,
+    color: '#0F172A',
     marginBottom: '16px'
   },
+  addressBlock: {
+    background: '#FFF7ED',
+    border: '1px solid #FFEDD5',
+    padding: '12px',
+    borderRadius: '8px'
+  },
+  addressBlockGreen: {
+    background: '#F0FDF4',
+    border: '1px solid #DCFCE7',
+    padding: '12px',
+    borderRadius: '8px'
+  },
   label: {
-    display: 'block',
     fontSize: '11px',
     fontWeight: 600,
-    color: '#94A3B8',
-    marginBottom: '4px',
-    textTransform: 'uppercase'
+    color: '#475569',
+    display: 'block',
+    marginBottom: '4px'
   },
   input: {
     width: '100%',
-    padding: '8px 12px',
+    background: '#FFFFFF',
+    border: '1px solid #CBD5E1',
     borderRadius: '6px',
-    background: 'rgba(15, 23, 42, 0.8)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    color: '#FFFFFF',
-    fontSize: '13px',
+    padding: '8px 10px',
+    fontSize: '12px',
+    color: '#0F172A',
+    fontWeight: 600,
     outline: 'none'
   },
-  emptyState: {
+  select: {
+    width: '100%',
+    background: '#FFFFFF',
+    border: '1px solid #CBD5E1',
+    borderRadius: '6px',
+    padding: '8px 10px',
+    fontSize: '12px',
+    color: '#0F172A',
+    fontWeight: 600,
+    outline: 'none'
+  },
+  btnCompute: {
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '60px 20px',
-    textAlign: 'center',
-    color: '#94A3B8'
+    gap: '8px',
+    background: '#E65100',
+    color: '#FFFFFF',
+    padding: '12px',
+    borderRadius: '8px',
+    fontWeight: 700,
+    fontSize: '13px',
+    border: 'none',
+    cursor: 'pointer',
+    marginTop: '8px',
+    boxShadow: '0 2px 6px rgba(230, 81, 0, 0.25)'
+  },
+  chainCard: {
+    background: '#FFFFFF',
+    borderRadius: '12px',
+    border: '1px solid #E2E8F0',
+    padding: '16px',
+    marginBottom: '16px'
+  },
+  chainNode: {
+    background: '#F1F5F9',
+    color: '#475569',
+    padding: '6px 10px',
+    borderRadius: '6px',
+    fontSize: '11px',
+    fontWeight: 600,
+    whiteSpace: 'nowrap'
+  },
+  chainNodeActive: {
+    background: '#FFF3E0',
+    border: '1px solid #FFE0B2',
+    color: '#E65100',
+    padding: '6px 10px',
+    borderRadius: '6px',
+    fontSize: '11px',
+    fontWeight: 700,
+    whiteSpace: 'nowrap'
   },
   routeCard: {
-    border: '1px solid',
-    borderRadius: '8px',
+    background: '#FFFFFF',
+    borderRadius: '10px',
     padding: '16px',
     cursor: 'pointer',
-    transition: 'all 0.2s'
+    transition: 'all 0.15s'
   },
   routeHeader: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '12px'
+    alignItems: 'center'
   },
-  rankBadge: {
-    background: '#C41E3A',
-    color: '#FFFFFF',
-    fontSize: '10px',
-    fontWeight: 700,
-    padding: '3px 8px',
-    borderRadius: '4px'
-  },
-  optTitle: {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#FFFFFF',
-    margin: 0
-  },
-  metricBadges: {
-    display: 'flex',
-    gap: '8px'
-  },
-  metricChip: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
+  badgeRank1: {
+    background: '#DCFCE7',
+    color: '#15803D',
+    padding: '2px 8px',
+    borderRadius: '4px',
     fontSize: '11px',
-    fontWeight: 600,
-    color: '#F8FAFC',
-    background: 'rgba(255, 255, 255, 0.06)',
-    padding: '4px 8px',
-    borderRadius: '4px'
+    fontWeight: 800
   },
-  legsRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    flexWrap: 'wrap',
-    marginBottom: '12px'
+  badgeRank2: {
+    background: '#DBEAFE',
+    color: '#1E40AF',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    fontSize: '11px',
+    fontWeight: 800
+  },
+  badgeRank3: {
+    background: '#FEF3C7',
+    color: '#B45309',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    fontSize: '11px',
+    fontWeight: 800
   },
   legPill: {
-    display: 'flex',
-    flexDirection: 'column',
-    background: 'rgba(15, 23, 42, 0.7)',
-    padding: '6px 10px',
+    background: '#F8FAFC',
+    border: '1px solid #E2E8F0',
+    color: '#0F172A',
+    padding: '4px 10px',
     borderRadius: '6px',
-    border: '1px solid rgba(255, 255, 255, 0.08)'
-  },
-  carrierName: {
     fontSize: '11px',
     fontWeight: 600,
-    color: '#F8FAFC'
-  },
-  legCap: {
-    fontSize: '10px',
-    color: '#10B981'
-  },
-  rationaleBox: {
-    fontSize: '12px',
-    color: '#CBD5E1',
-    background: 'rgba(0, 0, 0, 0.25)',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    borderLeft: '3px solid #D4AF37'
-  },
-  actionRow: {
-    marginTop: '16px'
-  },
-  successBox: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    background: 'rgba(16, 185, 129, 0.12)',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
+    gap: '6px'
+  },
+  rationaleBox: {
+    background: '#EFF6FF',
+    border: '1px solid #BFDBFE',
+    borderRadius: '6px',
+    padding: '10px 12px',
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'flex-start'
+  },
+  btnReserve: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    background: '#1E40AF',
+    color: '#FFFFFF',
+    padding: '14px',
     borderRadius: '8px',
-    padding: '12px 16px'
+    fontWeight: 700,
+    fontSize: '14px',
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 4px 10px rgba(30, 64, 175, 0.25)'
+  },
+  badgeSuccess: {
+    background: '#DCFCE7',
+    color: '#15803D',
+    padding: '4px 10px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 700
   }
 };
