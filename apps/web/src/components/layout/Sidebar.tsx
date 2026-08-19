@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMockStore } from '../../mock/mockStore';
 import {
-  LayoutDashboard, Map, Route, Siren, Package, BarChart3,
+  LayoutDashboard, Map, MapPin, Route, Siren, Package, BarChart3,
   Settings, Radio, Shield, ChevronRight
 } from 'lucide-react';
 
@@ -25,9 +25,9 @@ const navItems: NavItem[] = [
   },
   {
     id: 'live-map',
-    label: 'Network Map',
-    sub: '25 hubs · 120 legs',
-    icon: <Map size={18} />,
+    label: 'Live GPS Tracker',
+    sub: 'Real-time parcel telemetry',
+    icon: <MapPin size={18} />,
   },
   {
     id: 'route-planner',

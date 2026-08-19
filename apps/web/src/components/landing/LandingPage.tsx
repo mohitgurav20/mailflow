@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 interface LandingPageProps {
   onEnterApp: () => void;
+  onOpenCitizen?: () => void;
 }
 
 const stats = [
@@ -63,7 +64,7 @@ const modes = [
   { label: 'Surface Water', color: '#2563EB', icon: '⛵' },
 ];
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onOpenCitizen }) => {
   const [scrollY, setScrollY] = useState(0);
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -163,19 +164,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
 
           {/* CTA Buttons */}
           <div style={styles.ctaGroup}>
-            <button onClick={onEnterApp} style={styles.ctaPrimary}>
-              <span>Launch Operations Console</span>
+            <button
+              onClick={onOpenCitizen}
+              style={{
+                ...styles.ctaPrimary,
+                background: 'linear-gradient(135deg, #FF6B00 0%, #E65100 100%)',
+                boxShadow: '0 4px 20px rgba(230, 81, 0, 0.45)',
+              }}
+            >
+              <span>📮 Citizen Tracking Portal (Hindi / Voice / QR)</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
-            <button
-              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-              style={styles.ctaSecondary}
-            >
-              <span>Explore Features</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M12 5v14M5 12l7 7 7-7"/>
+
+            <button onClick={onEnterApp} style={styles.ctaSecondary}>
+              <span>🖥️ Officer Operations Console</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
           </div>

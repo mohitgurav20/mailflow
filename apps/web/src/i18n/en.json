@@ -1,0 +1,64 @@
+{
+  "app_name": "MailFlow",
+  "tagline": "India's Smartest Mail Network",
+  "nav": {
+    "track": "Track Parcel",
+    "book": "Book a Parcel",
+    "offices": "Find Post Office",
+    "officer_mode": "Officer Dashboard"
+  },
+  "status": {
+    "INDUCTED": "Booked ✅",
+    "IN_TRANSIT": "On the Way 🚚",
+    "REROUTED": "New Route Found 🔄",
+    "DELIVERED": "Delivered ✅",
+    "DELAYED_RISK": "Running Late ⚠️"
+  },
+  "transport": {
+    "COMMERCIAL_AIR": "Flying ✈️",
+    "RMS_RAIL": "By Train 🚂",
+    "MMS_ROAD": "By Road 🚛",
+    "HIRED_ROAD": "By Road 🚛",
+    "SURFACE_WATER": "By Ship ⛴️"
+  },
+  "tracking": {
+    "title": "Where is my parcel?",
+    "placeholder": "Enter tracking number (e.g. SP892019482IN)",
+    "voice_hint": "Or speak your tracking number",
+    "track_btn": "Track Now",
+    "not_found": "Parcel not found. Please check the tracking number.",
+    "eta_label": "Expected Arrival",
+    "from": "From",
+    "to": "To",
+    "weight": "Weight",
+    "progress": "Journey Progress",
+    "timeline_title": "Your Parcel's Journey",
+    "call_office": "Call Post Office",
+    "share": "Share Tracking Link"
+  },
+  "timeline": {
+    "booked": "Parcel Booked",
+    "sorted": "Sorted & Packed",
+    "in_air": "In the Air",
+    "on_train": "On the Train",
+    "on_road": "On the Way",
+    "at_hub": "At Sorting Centre",
+    "out_for_delivery": "Out for Delivery",
+    "delivered": "Delivered to You",
+    "current": "← You are here"
+  },
+  "time": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "days_ago": "{{n}} days ago",
+    "at": "at"
+  },
+  "errors": {
+    "voice_not_supported": "Voice search not supported in this browser. Please type your tracking number.",
+    "network_error": "Could not connect. Please check your internet and try again."
+  },
+  "qr": {
+    "title": "Scan to Track",
+    "subtitle": "Anyone can scan this code to see your parcel's status"
+  }
+}
